@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎭 程序猿错误堆栈吐槽机 - Stack Roast</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 30%, #f093fb 60%, #f5576c 100%);
+    background-attachment: fixed;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ===== Decorative floating elements ===== */
+  body::before, body::after {
+    position: fixed;
+    pointer-events: none;
+    font-size: 80px;
+    opacity: 0.08;
+    z-index: 0;
+  }
+  body::before { content: "🐛"; top: 5%; left: 3%; animation: float 6s ease-in-out infinite; }
+  body::after  { content: "💥"; bottom: 8%; right: 4%; animation: float 7s ease-in-out 1s infinite; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33%  { transform: translateY(-30px) rotate(5deg); }
+    66%  { transform: translateY(15px) rotate(-3deg); }
+  }
+
+  .bg-emoji {
+    position: fixed; pointer-events: none; font-size: 60px;
+    opacity: 0.06; z-index: 0; animation: float 8s ease-in-out infinite;
+  }
+
+  /* ===== Main Container ===== */
+  .container {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 1100px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.3);
+    padding: 40px 36px;
+    overflow: hidden;
+  }
+
+  /* ===== Header ===== */
+  .header { text-align: center; margin-bottom: 32px; }
+  .header .icon { font-size: 56px; display: block; margin-bottom: 8px; animation: bounce 1.5s ease-in-out infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+  .header h1 {
+    font-size: clamp(24px, 4vw, 38px);
+    font-weight: 900;
+    background: linear-gradient(135deg, #667eea, #f5576c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header .subtitle {
+    margin-top: 6px;
+    color: #888;
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+
+  /* ===== Main Layout ===== */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* ===== Panel common ===== */
+  .panel {
+    background: #fafafa;
+    border-radius: 16px;
+    padding: 20px;
+    border: 2px dashed #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    min-height: 380px;
+    transition: border-color 0.3s;
+  }
+  .panel:focus-within { border-color: #667eea; }
+
+  .panel-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-label .dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .input-panel .dot { background: #f5576c; }
+  .output-panel .dot { background: #667eea; }
+
+  /* ===== Textarea ===== */
+  textarea {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: "SF Mono", "Fira Code", "Consolas", "Monaco", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    color: #333;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+    min-height: 260px;
+  }
+  textarea:focus { outline: 2px solid #667eea; outline-offset: -2px; }
+  textarea::placeholder { color: #bbb; font-style: italic; }
+
+  /* ===== Output area ===== */
+  .output-box {
+    flex: 1;
+    background: #1e1e2e;
+    border-radius: 10px;
+    padding: 16px;
+    color: #cdd6f4;
+    font-size: 14px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+    min-height: 260px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .output-box.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c7086;
+    font-style: italic;
+    text-align: center;
+  }
+
+  /* ===== Buttons row ===== */
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+  }
+  .btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.18); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-roast {
+    background: linear-gradient(135deg, #f5576c, #f093fb);
+    color: #fff;
+    font-size: 18px;
+    padding: 16px 44px;
+    box-shadow: 0 6px 20px rgba(245,87,108,0.4);
+  }
+  .btn-roast:hover { box-shadow: 0 10px 30px rgba(245,87,108,0.55); }
+
+  .btn-copy    { background: #667eea; color: #fff; }
+  .btn-clear   { background: #fff; color: #555; border: 2px solid #ddd; }
+  .btn-another { background: #fff; color: #667eea; border: 2px solid #667eea; }
+
+  .btn-example { background: transparent; color: #888; font-weight: 500; font-size: 13px; text-decoration: underline; padding: 8px 16px; }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 12px 28px; border-radius: 50px;
+    font-size: 14px; z-index: 999;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+
+  /* ===== Stats bar ===== */
+  .stats-bar {
+    display: flex; gap: 20px; justify-content: center; margin-top: 12px;
+    font-size: 12px; color: #999;
+  }
+  .stats-bar span { display: flex; align-items: center; gap: 4px; }
+
+  /* ===== Footer ===== */
+  .footer {
+    text-align: center; margin-top: 24px; color: #bbb; font-size: 12px;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .container { padding: 24px 16px; }
+    .btn-roast { font-size: 16px; padding: 14px 32px; width: 100%; justify-content: center; }
+    .btn-row { flex-direction: column; }
+    .btn-row .btn { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background floating emojis -->
+<span class="bg-emoji" style="top:12%;left:15%;animation-delay:0s">🔥</span>
+<span class="bg-emoji" style="top:70%;left:80%;animation-delay:2s">😱</span>
+<span class="bg-emoji" style="top:45%;left:5%;animation-delay:4s">🤯</span>
+<span class="bg-emoji" style="top:20%;left:75%;animation-delay:1s">⚡</span>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <span class="icon">🎭</span>
+    <h1>程序猿错误堆栈吐槽机</h1>
+    <p class="subtitle">Stack Trace → Drama Queen Roast ✨ 让你的报错不再孤单</p>
+  </div>
+
+  <!-- Main layout: input + output side by side -->
+  <div class="main-layout">
+    <!-- Input panel -->
+    <div class="panel input-panel">
+      <div class="panel-label"><span class="dot"></span> 📋 粘贴你的报错堆栈</div>
+      <textarea id="inputArea" placeholder="把报错贴在这里，比如：
+
+Traceback (most recent call last):
+  File &quot;app.py&quot;, line 42, in &lt;module&gt;
+    print(user.name)
+AttributeError: &#39;NoneType&#39; object has no attribute &#39;name&#39;
+
+或者 JavaScript 的：
+
+TypeError: Cannot read properties of undefined (reading &#39;name&#39;)
+    at getUser (app.js:15:22)
+    at main (app.js:42:10)"></textarea>
+    </div>
+
+    <!-- Output panel -->
+    <div class="panel output-panel">
+      <div class="panel-label"><span class="dot"></span> 🎤 戏精吐槽结果</div>
+      <div id="outputBox" class="output-box empty">
+        等待你的报错投喂中... 🍿<br>贴好堆栈，点击下方大红按钮！
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-roast" id="btnRoast" onclick="doRoast()">
+      🔥 开始吐槽！
+    </button>
+    <button class="btn btn-another" id="btnAnother" onclick="doAnotherVersion()" style="display:none;">
+      🎲 再来一版
+    </button>
+    <button class="btn btn-copy" id="btnCopy" onclick="doCopy()" style="display:none;">
+      📋 复制结果
+    </button>
+    <button class="btn btn-clear" onclick="doClear()">
+      🗑️ 清空
+    </button>
+    <button class="btn btn-example" onclick="loadExample('python')">
+      试例 Python
+    </button>
+    <button class="btn btn-example" onclick="loadExample('js')">
+      试例 JS
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar" style="display:none;">
+    <span>🔍 识别到 <strong id="statLines">0</strong> 个堆栈帧</span>
+    <span>🐛 错误类型: <strong id="statError">-</strong></span>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    💡 支持 Python / JavaScript / Node.js / 通用堆栈格式 &nbsp;|&nbsp; 戏精 AI 倾情演绎
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================================================
+//  Parser: extract structured info from stack traces
+// =============================================================================
+
+/**
+ * Parse a stack trace string into structured data.
+ * Supports Python traceback, JavaScript/Node stack, and generic formats.
+ */
+function parseStackTrace(text) {
+  if (!text || !text.trim()) return null;
+
+  const lines = text.split(/\r?\n/);
+  const result = {
+    errorType: null,      // e.g. "TypeError", "AttributeError"
+    errorMessage: null,   // the message after the error type
+    errorRaw: null,       // the full error line
+    frames: [],           // { file, line, func, code }
+    unknownFormat: true,
+  };
+
+  // --- Try Python traceback format ---
+  // Pattern: File "path", line N, in <func>
+  // Pattern:     code_line
+  // Pattern: ErrorType: message
+  const pyFileRe = /^\s*File\s+"([^"]+)",\s+line\s+(\d+)(?:,\s+in\s+(.+))?/;
+  const pyCodeRe = /^\s{2,}(.+)$/;
+  const pyErrorRe = /^(\w+(?:Error|Exception|Warning|Interrupt|Exit|Error|Fault)):\s*(.*)/;
+
+  let i = 0;
+  // Skip "Traceback (most recent call last):" header
+  if (lines[0] && /^Traceback/i.test(lines[0])) i++;
+
+  const pyFrames = [];
+  while (i < lines.length) {
+    const m = lines[i].match(pyFileRe);
+    if (m) {
+      const frame = { file: m[1], line: parseInt(m[2]), func: m[3] || null, code: null };
+      i++;
+      // Next line might be the code line (indented)
+      if (i < lines.length) {
+        const cm = lines[i].match(pyCodeRe);
+        if (cm && !pyErrorRe.test(lines[i]) && !pyFileRe.test(lines[i])) {
+          frame.code = cm[1].trim();
+          i++;
+        }
+      }
+      pyFrames.push(frame);
+    } else {
+      const em = lines[i].match(pyErrorRe);
+      if (em) {
+        result.errorType = em[1];
+        result.errorMessage = em[2];
+        result.errorRaw = lines[i];
+        result.unknownFormat = false;
+        i++;
+        continue;
+      }
+      // Also match standalone error without file frames
+      const em2 = lines[i].match(pyErrorRe);
+      if (em2 && pyFrames.length === 0) {
+        // Might be a simple error line
+        result.errorType = em2[1];
+        result.errorMessage = em2[2];
+        result.errorRaw = lines[i];
+        result.unknownFormat = false;
+      }
+      i++;
+    }
+  }
+  if (pyFrames.length > 0 || result.errorType) {
+    result.frames = pyFrames;
+    result.unknownFormat = !result.errorType && pyFrames.length === 0;
+  }
+
+  // --- Try JavaScript/Node stack format ---
+  // Pattern: at funcName (file:line:col)
+  // Pattern: at file:line:col
+  // Pattern: ErrorType: message
+  const jsAtRe = /^\s*at\s+(?:(.+?)\s+\()?(.+?):(\d+)(?::\d+)?\)?/;
+  const jsErrorRe = /^(\w+(?:Error|Exception)):\s*(.*)/;
+  // Also: "ReferenceError: x is not defined" style
+  const jsErrorLineRe = /^(\w+(?:Error|Exception)):\s*(.*)/;
+
+  if (result.unknownFormat || result.frames.length === 0) {
+    const jsFrames = [];
+    let jsErrorType = null, jsErrorMessage = null, jsErrorRaw = null;
+
+    for (let j = 0; j < lines.length; j++) {
+      const atM = lines[j].match(jsAtRe);
+      if (atM) {
+        jsFrames.push({
+          file: atM[2],
+          line: parseInt(atM[3]),
+          func: atM[1] || null,
+          code: null,
+        });
+        continue;
+      }
+      const errM = lines[j].match(jsErrorRe);
+      if (errM) {
+        jsErrorType = errM[1];
+        jsErrorMessage = errM[2];
+        jsErrorRaw = lines[j];
+        continue;
+      }
+    }
+
+    if (jsFrames.length > 0 || jsErrorType) {
+      result.frames = jsFrames.length > 0 ? jsFrames : result.frames;
+      if (jsErrorType) {
+        result.errorType = jsErrorType;
+        result.errorMessage = jsErrorMessage;
+        result.errorRaw = jsErrorRaw;
+      }
+      result.unknownFormat = false;
+    }
+  }
+
+  // --- Fallback: scan for any error pattern ---
+  if (!result.errorType) {
+    for (const line of lines) {
+      const m = line.match(/^(\w+(?:Error|Exception))(?::\s*(.*))?/i);
+      if (m) {
+        result.errorType = m[1];
+        result.errorMessage = m[2] || '';
+        result.errorRaw = line;
+        result.unknownFormat = false;
+        break;
+      }
+    }
+  }
+
+  // --- Fallback: scan for file:line patterns ---
+  if (result.frames.length === 0) {
+    for (const line of lines) {
+      const m = line.match(/(?:^|\s)(?:at\s+)?([\w\/\.-]+\.(?:py|js|ts|jsx|tsx|go|rs|java|cpp|c|rb|php|swift|kt))(?::(\d+))?/);
+      if (m) {
+        result.frames.push({ file: m[1], line: m[2] ? parseInt(m[2]) : null, func: null, code: null });
+        result.unknownFormat = false;
+      }
+    }
+  }
+
+  return result;
+}
+
+// =============================================================================
+//  Roast Generator: parsed data → dramatic roast text
+// =============================================================================
+
+// --- Template pools ---
+
+const OPENINGS = [
+  "🎭 戏精吐槽报告 🎭",
+  "🎤 戏精登场！让我看看是哪位出错了~",
+  "💅 哟哟哟，让我来瞅瞅这个堆栈...",
+  "🍿 搬好小板凳，戏精开始表演了！",
+  "🎪 欢迎收看《今日说法》之...不对，是《今日报错》！",
+  "🔔 叮咚~ 您的专属吐槽已送达，请查收！",
+  "👀 让我戴上我的戏精眼镜看看...",
+  "🎬 Action! 微型剧场开演——",
+];
+
+const EPIC_OPENINGS = [
+  "🌋 警报拉响！！这不是演习！！",
+  "🚨 呜——呜——呜——全体注意！！",
+  "💀 坟头草都三米高了才来debug？",
+  "🔮 让我掐指一算...嗯，果然，又炸了。",
+];
+
+// Roasts for error types (key → [templates])
+const ERROR_ROASTS = {
+  TypeError: [
+    "哦豁！经典的 TypeError！类型又在调皮了，你传给它的东西它压根不认识啊！🤷",
+    "TypeError！类型不匹配就像你让一只猫去汪汪叫——臣妾做不到啊！！🐱",
+    "Type...Error...（缓慢摇头）你是不是又把字符串当数字用了？嗯？是不是！😤",
+  ],
+  AttributeError: [
+    "啊哈！AttributeError！「这个对象没有这个属性」——翻译成人话就是：你问一个哑巴要电话号码！📞",
+    "AttributeError~ 熟悉的配方，熟悉的味道。你又想从一个空壳子身上拿东西？它又不是哆啦A梦的口袋！😾",
+    "经典的 AttributeError！对象说：『你要的这玩意儿我没有啊！我又不是百货商场！』🏬",
+  ],
+  NameError: [
+    "NameError！！变量都没定义就想用？？你这跟在大街上叫一个不认识的人「亲爱的」有什么区别！！😠",
+    "NameError...翻译一下：你叫的那个名字，Python表示听都没听过，查无此人！👻",
+    "哦~ NameError~ 变量名写错了还是压根儿忘了定义？没关系，反正都是你的锅！🍳",
+  ],
+  SyntaxError: [
+    "SyntaxError！！语法错误！！你写的代码编译器都看不懂，这得是多离谱的语法啊！！📝",
+    "SyntaxError~ 语法错了亲！少了个冒号还是多了个括号？这种低级错误小学生都不会犯啦！（夸张）✏️",
+    "SyntaxError！你的代码语法比我的猫写的还离谱，至少它踩键盘还能打出个 hello world！🐈",
+  ],
+  ReferenceError: [
+    "ReferenceError！！引用了一个不存在的东西！你在呼唤虚空吗？？🌌",
+    "ReferenceError~ 你引用的那个变量，JavaScript表示：『不认识，没见过，别来沾边！』🙅",
+    "ReferenceError！未定义的引用，就像你@了一个不存在的好友——对方拒绝接收你的消息！💬",
+  ],
+  IndexError: [
+    "IndexError！！索引越界！数组一共就3个元素你非要访问第42个？咋不去火星旅游呢！🚀",
+    "IndexError~ 下标越界，翻译：你的手指戳到了列表外面，戳了个寂寞！👉💨",
+  ],
+  KeyError: [
+    "KeyError！！字典里没这个键！你问一个从来不运动的人「你卧推多少」——这合适吗？？🏋️",
+    "KeyError~ 你找的 key 字典里根本没有，字典打开看了一眼然后啪地合上了！📕",
+  ],
+  ValueError: [
+    "ValueError！！值不对！你把三角形塞进圆形的洞里，幼儿园小朋友都知道不行好吗！🔺⭕",
+    "ValueError~ 值不对劲儿，就像你往微波炉里放了个铁碗——不合适，真的不合适！🥣",
+  ],
+  ImportError: [
+    "ImportError！！导入失败！你import的那个模块人家根本没装！先 pip install 一下好吗！！📦",
+    "ImportError~ 你要引入的模块不存在，Python翻遍了口袋也没找到，乖，先去装一下！🛍️",
+  ],
+  ZeroDivisionError: [
+    "ZeroDivisionError！！除以零！！你是想毁灭宇宙吗？？数学老师哭了！！🌌💥",
+    "ZeroDivisionError~ 小学三年级数学：除数不能为零！请把这句话抄100遍！📐",
+  ],
+  RangeError: [
+    "RangeError！！范围错了！你传的参数超出了有效范围，就像要求一个只能跳1米的人去跳10米！🤸",
+    "RangeError~ 数值越界！你的数字太大了，JavaScript表示承受不住！💪",
+  ],
+  ENOENT: [
+    "ENOENT！！文件不存在！你找的文件可能根本就没出生过！你是不是路径又拼错了？？📁",
+    "ENOENT~ Error NO ENTry! 文件：『你找我？不好意思我不在~』👻",
+  ],
+  undefined: [
+    "undefined 大魔王又来了！那个值是 undefined，空空的，什么都没有，连0都不是！0至少还是个数字！🕳️",
+    "undefined！undefined！undefined！重要的事情说三遍！你的变量是 undefined！🤦",
+  ],
+  null: [
+    "null！null！又是万恶的 null！它就像一个空杯子，你非要问它里面装的什么饮料，能告诉你才怪！🥤",
+    "null 出现了！这个变量是 null，什么都没有，比空气还空，你却想对它动手动脚！👻",
+  ],
+  CannotReadPropertiesOfUndefined: [
+    "经典中的经典！！Cannot read properties of undefined！！你在试图读取 undefined 的属性！undefined 又不是对象，哪儿来的属性给你读！虚空掏物？？🔮",
+    "啊啊啊！Cannot read properties of undefined！这是 JavaScript 的保留节目了！undefined 说：『我没有属性！我一无所有！』😭",
+  ],
+  CannotReadPropertiesOfNull: [
+    "Cannot read properties of null！null 就是 null！它不是对象！你从 null 身上想读到啥？读到寂寞？📖💨",
+    "又是 null！Cannot read properties of null！你面前的是一堵墙，你却想在墙上找一扇窗！🧱",
+  ],
+};
+
+// Roasts for file + line
+const FILE_LINE_ROASTS = [
+  "出事儿的地方在 **{file}** 的第 **{line}** 行！这一行代码现在肯定很慌，因为它知道自己闯祸了！😱",
+  "让我瞧瞧...哦，是 **{file}** 第 {line} 行干的！这一行代码正在角落里瑟瑟发抖！🫣",
+  "罪魁祸首锁定：**{file}** 的第 {line} 行！来人啊，把这一行拖出去！⚔️",
+  "**{file}**:{line} — 就是这里！建议大家围观这一行，它已经被公开处刑了！🎯",
+  "第 {line} 行，**{file}** 文件。这一行代码写的时候大概没想到自己会被挂出来示众吧！📢",
+  "元凶找到了！**{file}** 的第 {line} 行！建议这一行代码主动认错，争取宽大处理！🕵️",
+  "**{file}** 第 {line} 行，你已被逮捕！你有权保持沉默，但你写的每一行bug都将成为呈堂证供！👮",
+  "瞧瞧 **{file}** 的第 {line} 行，它现在就像一个被老师点名站起来回答问题的学生——满脸写着「完了」！😰",
+  "炸弹在 **{file}** 第 {line} 行引爆！爆炸半径：整个程序！💣",
+  "第 {line} 行啊第 {line} 行，**{file}** 里的第 {line} 行，你为什么要这样对大家！😭",
+];
+
+// Roasts for code / variable names
+const CODE_ROASTS = [
+  "再看看写了啥...「{code}」？？？认真的吗？？这一行代码是闭着眼睛写的吗！🙈",
+  "「{code}」——就这一行，就这！一个程序员的尊严碎了一地！💔",
+  "问题就出在「{code}」！这一行代码的自信程度和它的正确程度完全成反比！📉",
+  "「{code}」...（沉默三秒）你是不是觉得这样写没问题？是不是！😤",
+  "啧啧啧，「{code}」，多么优美的一行代码啊——除了它是错的之外简直完美！👌",
+];
+
+// Variable-specific roasts
+const VAR_ROASTS = [
+  "那个叫 **{var}** 的变量又出问题了！我就知道！它一直都不太靠谱！😒",
+  "**{var}**！又是你！上次出bug也是你！你是不是故意的！！🤨",
+  "报警了！**{var}** 这个变量又在搞事情！建议把它列入黑名单！🚫",
+  "**{var}**，一个平平无奇的变量名，一个轰轰烈烈的bug制造者！🏆",
+  "变量 **{var}** 说：『我只是个变量，我有什么错！』——你有错！你大错特错！👆",
+  "一切的一切都指向 **{var}**！这个变量就是bug界的惯犯！🚔",
+  "**{var}** 同志，请起立！解释一下你为什么又为空了！📢",
+  "每次看到 **{var}** 我都有一种不祥的预感，而这次预感又应验了！🔮",
+];
+
+// Roasts for error messages
+const MESSAGE_ROASTS = [
+  "错误详情是：「{msg}」——翻译成人话就是：你写的代码在某一步彻底想不开了！🤯",
+  "系统提示：「{msg}」——嗯，每个字我都认识，连起来就是「你完蛋了」！💀",
+  "「{msg}」——这个错误消息看起来很高冷，其实就是在说：你做错了，笨蛋！🤪",
+  "报错信息：「{msg}」——天呐，这个错误消息的潜台词是「自己好好想想哪里不对」！🙄",
+  "最后它说「{msg}」——好的好的，知道了知道了，你能不能换句新鲜的说辞！🦜",
+  "「{msg}」——看到没，程序都在嫌弃你！连报错信息都透着一股无奈！😮‍💨",
+];
+
+// Closings
+const CLOSINGS = [
+  "\n🎬 **总结**：建议先喝杯水冷静一下，然后回去检查上面提到的那一行。你的代码在呼救，快去救它！🏃‍♂️💨",
+  "\n📝 **总结**：bug是编程的调味料，没有bug的代码是不完整的——但是你能不能少加点料啊！！🧂",
+  "\n💡 **总结**：这种错误属于「看一眼就知道怎么回事但就是不想改」系列。勇敢面对吧少年！🦸",
+  "\n🔧 **总结**：修bug三步走：① 认清现实 ② 找到那行代码 ③ 改掉它！现在卡在第②步？正常！😎",
+  "\n🍀 **总结**：每一次报错都是一次成长的机会...算了这种鸡汤我自己都不信。快去debug吧！🔨",
+  "\n☕ **总结**：建议先去接杯咖啡/奶茶，让大脑清醒一下，回来再战！这种bug不值得你上头！🧋",
+  "\n🎯 **总结**：bug千万条，细心第一条。写码不规范，debug两行泪！💧",
+  "\n🤖 **总结**：如果我是你，我会...算了我是吐槽机器人不是debug机器人，你自己看着办吧！🤷",
+  "\n🌟 **总结**：好消息：这是个很常见的错误。坏消息：这意味着你犯了一个很常见的错误！🙃",
+  "\n⚡ **总结**：求求你了，下次写代码之前先想清楚变量到底是不是空的！这种低级错误不要再犯了！！🔨💢",
+];
+
+// Extra sassy closings
+const SASSY_CLOSINGS = [
+  "\n💢 **最后**：答应我，下次写代码前先动动脑子好吗！你的键盘都快替你感到羞耻了！⌨️😤",
+  "\n😾 **最后说一句**：同样的坑你已经踩了不下三次了吧？要不要我给你立个警示牌？？⚠️",
+  "\n🙄 **最后**：程序不会说谎，它说你错了你就是错了。认了吧！🧎",
+];
+
+// Error type → funny nicknames
+const ERROR_NICKNAMES = {
+  TypeError: "类型侠",
+  AttributeError: "属性幽灵",
+  NameError: "无名氏",
+  SyntaxError: "语法警察",
+  ReferenceError: "虚空行者",
+  IndexError: "越界狂魔",
+  KeyError: "钥匙大盗",
+  ValueError: "价值审判官",
+  ImportError: "失踪模块",
+  ZeroDivisionError: "数学毁灭者",
+  RangeError: "范围刺客",
+  ENOENT: "文件消失术",
+};
+
+/**
+ * Generate a roast from parsed stack trace data.
+ * @param {Object} parsed - result from parseStackTrace()
+ * @param {number} seed - for variety (0, 1, 2, ...)
+ * @returns {string} roast text
+ */
+function generateRoast(parsed, seed) {
+  if (!parsed) return "🤔 嗯...你确定你贴的是堆栈信息吗？啥也解析不出来啊！\n\n要不你检查一下：是不是贴错了？还是说你根本没报错，只是想找我聊天？🙃";
+
+  // Normalize seed
+  const s = (seed || 0) % 100;
+
+  // Pick functions (seeded pseudo-random)
+  const pick = (arr) => arr[s % arr.length];
+  const pickBy = (arr, seedOffset) => arr[(s + seedOffset) % arr.length];
+
+  const lines = [];
+
+  // Opening
+  if (s < 4) {
+    lines.push(pick(OPENINGS));
+  } else if (s < 6) {
+    lines.push(pick(EPIC_OPENINGS));
+  } else {
+    lines.push(pick(OPENINGS));
+  }
+  lines.push("━".repeat(36));
+
+  // If format unrecognized
+  if (parsed.unknownFormat && !parsed.errorType && parsed.frames.length === 0) {
+    lines.push("");
+    lines.push("不是...你贴的这是啥啊？？我左看右看上看下看，愣是没看出这是个堆栈！！😤");
+    lines.push("");
+    lines.push("你确定你复制的是报错信息？而不是随便复制了一段代码来逗我？？");
+    lines.push("人家等了半天就等着吐槽你的报错呢，结果你给我看这个？？");
+    lines.push("连个正经的堆栈都贴不好！！你是不是在摸鱼！！🐟");
+    lines.push("");
+    lines.push("💡 正确姿势：复制终端里那堆红红的、看着就让人血压升高的报错信息，然后贴过来！");
+    return lines.join("\n");
+  }
+
+  // If has some frames but no error type
+  if (!parsed.errorType && parsed.frames.length > 0) {
+    lines.push("");
+    lines.push("诶？解析出了一些文件信息，但没找到错误类型...你是不是只贴了一半？🤨");
+    lines.push("不管了，先看看这些文件在搞什么幺蛾子！");
+  }
+
+  // Error type roast
+  if (parsed.errorType) {
+    lines.push("");
+    const et = parsed.errorType;
+    let nick = ERROR_NICKNAMES[et] || "神秘bug";
+
+    // Special handling for JS "Cannot read properties of undefined"
+    let effectiveType = et;
+    if (et === 'TypeError' && parsed.errorMessage && /cannot read properties of undefined/i.test(parsed.errorMessage)) {
+      effectiveType = 'CannotReadPropertiesOfUndefined';
+    } else if (et === 'TypeError' && parsed.errorMessage && /cannot read properties of null/i.test(parsed.errorMessage)) {
+      effectiveType = 'CannotReadPropertiesOfNull';
+    }
+
+    const roasts = ERROR_ROASTS[effectiveType] || ERROR_ROASTS[et];
+    if (roasts) {
+      lines.push(pick(roasts));
+    } else {
+      lines.push(`啊哈！是 **${et}**！外号「${nick}」！虽然这个错误类型不常见，但不妨碍我吐槽你！😏`);
+      lines.push(`${et} 什么的，一听名字就知道不对劲！你又在搞什么骚操作？？🤨`);
+    }
+  }
+
+  // File/line roasts (first frame or most relevant)
+  const primaryFrame = parsed.frames[0];
+  if (primaryFrame && primaryFrame.file && primaryFrame.line) {
+    lines.push("");
+    lines.push(pick(FILE_LINE_ROASTS)
+      .replace(/\{file\}/g, `**${primaryFrame.file}**`)
+      .replace(/\{line\}/g, `**${primaryFrame.line}**`));
+  }
+
+  // Additional frames
+  if (parsed.frames.length > 1) {
+    lines.push("");
+    lines.push("调用链一路追溯上去：");
+    for (let i = 1; i < Math.min(parsed.frames.length, 4); i++) {
+      const f = parsed.frames[i];
+      const loc = f.file + (f.line ? `:${f.line}` : '');
+      const who = f.func || '某个函数';
+      lines.push(`  ⬆️ 第${i+1}层：**${who}** @ ${loc} — 这个也在调用链上，一个都别想跑！👆`);
+    }
+  }
+
+  // Code / variable roast
+  if (primaryFrame && primaryFrame.code) {
+    const code = primaryFrame.code;
+    lines.push("");
+    lines.push(pick(CODE_ROASTS).replace(/\{code\}/g, `\`${code}\``));
+
+    // Try to extract variable names
+    const varNames = extractVarNames(code);
+    if (varNames.length > 0) {
+      const v = pick(varNames);
+      lines.push("");
+      lines.push(pick(VAR_ROASTS).replace(/\{var\}/g, `**${v}**`));
+    }
+  }
+
+  // Variable from error message
+  if (parsed.errorMessage) {
+    // Try extract variable names from error message
+    const msgVars = extractVarNames(parsed.errorMessage);
+    const relevantVars = msgVars.filter(v =>
+      !['object', 'attribute', 'properties', 'undefined', 'null', 'none', 'property'].includes(v.toLowerCase())
+    );
+    if (relevantVars.length > 0) {
+      const v = pick(relevantVars);
+      const alreadyRoasted = primaryFrame && primaryFrame.code && extractVarNames(primaryFrame.code).includes(v);
+      if (!alreadyRoasted) {
+        lines.push("");
+        lines.push(pick(VAR_ROASTS).replace(/\{var\}/g, `**${v}**`));
+      }
+    }
+
+    // Error message roast
+    lines.push("");
+    const shortMsg = parsed.errorMessage.length > 120
+      ? parsed.errorMessage.substring(0, 120) + '...'
+      : parsed.errorMessage;
+    lines.push(pick(MESSAGE_ROASTS).replace(/\{msg\}/g, `\`${shortMsg}\``));
+  }
+
+  // Extra sass for common patterns
+  if (parsed.errorMessage) {
+    const msg = parsed.errorMessage.toLowerCase();
+    if (msg.includes('none') || msg.includes('null') || msg.includes('undefined')) {
+      lines.push("");
+      lines.push(pick([
+        "看到 'None'/'null'/'undefined' 我就血压飙升！判空！判空！判空！重要的事情说三遍！！🤬",
+        "又是不判空！！你写代码的习惯是不是跟金鱼学的，7秒就忘？？🐠",
+        "空值检查了解一下？`if x is not None` / `if (x != null)` 很难写吗？？很难吗！！😤",
+      ]));
+    }
+    if (msg.includes('not defined') || msg.includes('is not defined')) {
+      lines.push("");
+      lines.push(pick([
+        "「not defined」！你用了没定义的东西！你是不是把变量名写错了？还是忘了声明？？🤔",
+        "未定义就使用？这跟在沙漠里找游泳池有什么区别！🏜️",
+      ]));
+    }
+    if (msg.includes('cannot find module') || msg.includes('no module')) {
+      lines.push("");
+      lines.push(pick([
+        "找不到模块！你是不是又忘了 `pip install` / `npm install` 了？依赖没装好就开始跑？心也太大了吧！📦",
+        "模块失踪案！建议立即执行 `pip install` 或 `npm install` 寻回失踪模块！🕵️",
+      ]));
+    }
+  }
+
+  // Closing
+  lines.push("");
+  if (s % 3 === 0) {
+    lines.push(pick(SASSY_CLOSINGS));
+  } else {
+    lines.push(pick(CLOSINGS));
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Extract potential variable/function names from code/message text.
+ */
+function extractVarNames(text) {
+  if (!text) return [];
+  const names = [];
+  // Match identifiers: word.word or standalone identifiers
+  const re = /\b([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)\b/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const name = m[1];
+    // Filter out common keywords and short names
+    const skip = new Set([
+      'if','else','for','while','do','in','of','is','as','at','to','by','on','no','or','and','not',
+      'true','false','none','null','undefined','this','new','var','let','const','function','return',
+      'class','import','from','export','default','try','catch','throw','finally','typeof','instanceof',
+      'file','line','module','object','attribute','property','properties','type','error','exception',
+      'has','was','the','are','can','be','an','it','we','you','i','a','s','t','n',
+      'reading','cannot','read','most','recent','call','last','traceback','what','main',
+      'get','set','run','init','print','log',
+    ]);
+    if (!skip.has(name.toLowerCase()) && name.length >= 2 && !/^\d+$/.test(name)) {
+      names.push(name);
+    }
+  }
+  // Deduplicate
+  return [...new Set(names)];
+}
+
+// =============================================================================
+//  State
+// =============================================================================
+
+let lastParsed = null;
+let roastSeed = 0;
+
+// =============================================================================
+//  UI Functions
+// =============================================================================
+
+function doRoast() {
+  const input = document.getElementById('inputArea').value;
+  const outputBox = document.getElementById('outputBox');
+  const btnAnother = document.getElementById('btnAnother');
+  const btnCopy = document.getElementById('btnCopy');
+  const statsBar = document.getElementById('statsBar');
+
+  if (!input.trim()) {
+    outputBox.classList.add('empty');
+    outputBox.innerHTML = '喂！！你倒是贴个堆栈进来啊！！<br>上面那个大框框不是摆设好吗！！😤<br><br>⬆️ 把报错信息贴到左边的框里再点按钮！';
+    btnAnother.style.display = 'none';
+    btnCopy.style.display = 'none';
+    statsBar.style.display = 'none';
+    return;
+  }
+
+  lastParsed = parseStackTrace(input);
+  roastSeed = 0;
+
+  const roast = generateRoast(lastParsed, roastSeed);
+
+  outputBox.classList.remove('empty');
+  outputBox.innerHTML = roast;
+  btnAnother.style.display = 'inline-flex';
+  btnCopy.style.display = 'inline-flex';
+
+  // Stats
+  if (lastParsed.frames.length > 0 || lastParsed.errorType) {
+    statsBar.style.display = 'flex';
+    document.getElementById('statLines').textContent = lastParsed.frames.length;
+    document.getElementById('statError').textContent = lastParsed.errorType || '未知';
+  }
+
+  // Scroll output to top
+  outputBox.scrollTop = 0;
+}
+
+function doAnotherVersion() {
+  if (!lastParsed) return;
+  roastSeed++;
+  const roast = generateRoast(lastParsed, roastSeed);
+  const outputBox = document.getElementById('outputBox');
+  outputBox.classList.remove('empty');
+  outputBox.innerHTML = roast;
+  outputBox.scrollTop = 0;
+}
+
+function doCopy() {
+  const outputBox = document.getElementById('outputBox');
+  const text = outputBox.textContent;
+  if (!text || outputBox.classList.contains('empty')) {
+    showToast('还没有吐槽内容可以复制哦~ 😅');
+    return;
+  }
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 已复制！快去发给你的冤种同事吧！');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ 已复制！');
+  });
+}
+
+function doClear() {
+  document.getElementById('inputArea').value = '';
+  const outputBox = document.getElementById('outputBox');
+  outputBox.classList.add('empty');
+  outputBox.innerHTML = '等待你的报错投喂中... 🍿<br>贴好堆栈，点击下方大红按钮！';
+  document.getElementById('btnAnother').style.display = 'none';
+  document.getElementById('btnCopy').style.display = 'none';
+  document.getElementById('statsBar').style.display = 'none';
+  lastParsed = null;
+  roastSeed = 0;
+}
+
+function loadExample(type) {
+  const examples = {
+    python: `Traceback (most recent call last):
+  File "app.py", line 42, in <module>
+    print(user.name)
+AttributeError: 'NoneType' object has no attribute 'name'`,
+    js: `TypeError: Cannot read properties of undefined (reading 'name')
+    at getUser (src/utils.js:15:22)
+    at processUser (src/main.js:42:10)
+    at Object.<anonymous> (src/index.js:8:5)`,
+  };
+  document.getElementById('inputArea').value = examples[type] || '';
+  showToast(`📥 已加载 ${type === 'python' ? 'Python' : 'JavaScript'} 示例！`);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// =============================================================================
+//  Keyboard shortcut
+// =============================================================================
+
+document.addEventListener('keydown', (e) => {
+  // Ctrl/Cmd + Enter to roast
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    doRoast();
+  }
+});
+
+// Initial state
+document.getElementById('btnAnother').style.display = 'none';
+document.getElementById('btnCopy').style.display = 'none';
+document.getElementById('statsBar').style.display = 'none';
+</script>
+
+</body>
+</html>
